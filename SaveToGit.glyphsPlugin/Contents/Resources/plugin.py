@@ -41,6 +41,14 @@ class SaveToGit(GeneralPlugin):
     @objc.python_method
     def build_commit_msg(self, old_font, new_font):
         msg = "Update %s %s" % (new_font.familyName, new_font.masters[0].name)
+        glyphs = [
+            name
+            for name in new_font.glyphs
+            if name not in old_font
+            or old_font.glyphs[name] != new_font.glyphs[name]
+        ]
+        if glyphs:
+            msg += ": " + ", ".join(glyphs)
         return msg
 
     @objc.python_method

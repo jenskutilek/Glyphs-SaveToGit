@@ -5,6 +5,7 @@ from __future__ import division, print_function, unicode_literals
 import objc
 
 import subprocess
+import tempfile
 
 from os.path import basename, dirname
 
@@ -26,43 +27,48 @@ class SaveToGit(GeneralPlugin):
         Glyphs.menu[FILE_MENU].append(newMenuItem)
 
     @objc.python_method
+    def run_git_cmd(self, args, working_dir=None):
+        result = None
+        # result = subprocess.run(cmd, capture_output=True)
+        try:
+            result = subprocess.check_output(
+                args, stderr=subprocess.STDOUT, cwd=working_dir, shell=False
+            )
+        except subprocess.CalledProcessError as e:
+            Glyphs.showNotification(self.name, "Error: %s" % e.output)
+        return result
+
+    @objc.python_method
+    def build_commit_msg(self, old_font, new_font):
+        return "Update %s %s" % (new_font.familyName, new_font.masters[0].name)
+
+    @objc.python_method
     def saveAndCommit(self, sender):
         font = Glyphs.font
         font_path = font.filepath
         fontdir = dirname(font_path)
         fontfile = basename(font_path)
-
-        # Add changed file to index
-
         font.save()
 
-        cmd = ["git", "add", font_path]
+        # Compare with last revision
 
-        result = None
-        # result = subprocess.run(cmd, capture_output=True)
-        try:
-            result = subprocess.check_output(
-                cmd, stderr=subprocess.STDOUT, cwd=fontdir, shell=False
-            )
-        except subprocess.CalledProcessError as e:
-            Glyphs.showNotification(
-                self.name, "Error adding changes: %s" % e.output
-            )
+        # Get previous version of the file
+        old_data = self.run_git_cmd(
+            ["git", "show", "HEAD:./%s" % fontfile], fontdir
+        )
+
+        # Save to a temp file and open it for comparison
+        with tempfile.NamedTemporaryFile(suffix=".glyphs") as old_file:
+            old_file.write(old_data)
+            old_font = Glyphs.open(old_file.name, showInterface=False)
+        msg = self.build_commit_msg(old_font, font)
+        old_font.close()
+
+        # Add changed file to index
+        self.run_git_cmd(["git", "add", fontfile], fontdir)
 
         # Commit changes
-
-        cmd = ["git", "commit", "-m", "Update %s" % fontfile]
-
-        # result = subprocess.run(cmd, capture_output=True)
-        try:
-            result = subprocess.check_output(
-                cmd, stderr=subprocess.STDOUT, cwd=fontdir, shell=False
-            )
-        except subprocess.CalledProcessError as e:
-            Glyphs.showNotification(
-                self.name, "Error committing changes: %s" % e.output
-            )
-            return
+        result = self.run_git_cmd(["git", "commit", "-m", msg], fontdir)
         Glyphs.showNotification(self.name, str(result))
 
     @objc.python_method

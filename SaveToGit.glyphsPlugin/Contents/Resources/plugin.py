@@ -40,7 +40,8 @@ class SaveToGit(GeneralPlugin):
 
     @objc.python_method
     def build_commit_msg(self, old_font, new_font):
-        return "Update %s %s" % (new_font.familyName, new_font.masters[0].name)
+        msg = "Update %s %s" % (new_font.familyName, new_font.masters[0].name)
+        return msg
 
     @objc.python_method
     def saveAndCommit(self, sender):

@@ -19,7 +19,6 @@ class SaveToGit(GeneralPlugin):
         self.name = Glyphs.localize(
             {"en": "Save to Git", "de": "In Git sichern"}
         )
-        self.keyboardShortcut = "x"
 
     @objc.python_method
     def start(self):

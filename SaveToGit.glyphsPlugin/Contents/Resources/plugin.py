@@ -9,9 +9,12 @@ import tempfile
 
 from os.path import basename, dirname
 
-from AppKit import NSMenuItem
+from AppKit import NSClassFromString, NSMenuItem
 from GlyphsApp import FILE_MENU, Glyphs
 from GlyphsApp.plugins import GeneralPlugin
+
+
+GSCompareFonts = NSClassFromString("GSCompareFonts")
 
 
 class SaveToGit(GeneralPlugin):
@@ -41,14 +44,36 @@ class SaveToGit(GeneralPlugin):
     @objc.python_method
     def build_commit_msg(self, old_font, new_font):
         msg = "Update %s %s" % (new_font.familyName, new_font.masters[0].name)
-        glyphs = [
-            name
-            for name in new_font.glyphs
-            if name not in old_font
-            or old_font.glyphs[name] != new_font.glyphs[name]
-        ]
+        glyphs = []
+        for name in new_font.glyphs.keys():
+            # Glyph has been added
+            if name not in old_font.glyphs:
+                glyphs.append(name)
+                continue
+
+            # Glyph comparison
+            old_glyph = old_font.glyphs[name]
+            new_glyph = new_font.glyphs[name]
+            glyph_cmp = GSCompareFonts.compareGlyph_andGlyph_(
+                old_font.glyphs[name], new_font.glyphs[name]
+            )
+            if glyph_cmp:
+                glyphs.append(name)
+                continue
+
+            # Layer comparison
+            num_old_layers = len(old_glyph.layers)
+            num_new_layers = len(new_glyph.layers)
+            if num_old_layers != num_new_layers:
+                continue
+            for i in range(num_old_layers):
+                layer_cmp = GSCompareFonts.compareLayer_andLayer_(
+                    old_glyph.layers[i], new_glyph.layers[i]
+                )
+                if layer_cmp:
+                    glyphs.append(name)
         if glyphs:
-            msg += ": " + ", ".join(glyphs)
+            msg += ": " + ", ".join(sorted(set(glyphs)))
         return msg
 
     @objc.python_method

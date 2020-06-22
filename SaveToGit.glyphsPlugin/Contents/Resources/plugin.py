@@ -102,8 +102,8 @@ class SaveToGit(GeneralPlugin):
         self.run_git_cmd(["git", "add", fontfile], fontdir)
 
         # Commit changes
-        result = self.run_git_cmd(["git", "commit", "-m", msg], fontdir)
-        Glyphs.showNotification(self.name, str(result))
+        self.run_git_cmd(["git", "commit", "-m", msg], fontdir)
+        Glyphs.showNotification(self.name, msg)
 
     @objc.python_method
     def __file__(self):

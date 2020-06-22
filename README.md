@@ -12,7 +12,6 @@ Instead of using the normal Save command, use `File > Save to Git`. This will sa
 
 - The `git` command line utility must be installed on your system (see below for instructions).
 - The git repository must already be set up, and the Glyphs file must have been saved and committed.
-- The commit message just says "Updated <Family Name> <First Master Name>", maybe more detailed change reports can be generated in the future.
 - Set your own shortcut via system preferences.
 
 ## Git Installation

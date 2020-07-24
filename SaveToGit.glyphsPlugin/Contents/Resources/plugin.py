@@ -5,9 +5,9 @@ from __future__ import division, print_function, unicode_literals
 import objc
 
 import subprocess
-import tempfile
 
-from os.path import basename, dirname
+from os import remove
+from os.path import basename, dirname, join
 
 from AppKit import NSClassFromString, NSMenuItem
 from GlyphsApp import FILE_MENU, Glyphs
@@ -92,11 +92,13 @@ class SaveToGit(GeneralPlugin):
         )
 
         # Save to a temp file and open it for comparison
-        with tempfile.NamedTemporaryFile(suffix=".glyphs") as old_file:
+        tmp_file_path = join(fontdir, ".de.kutilek.SaveToGit.%s" % fontfile)
+        with open(tmp_file_path, "wb") as old_file:
             old_file.write(old_data)
             old_font = Glyphs.open(old_file.name, showInterface=False)
         msg = self.build_commit_msg(old_font, font)
         old_font.close()
+        remove(tmp_file_path)
 
         # Add changed file to index
         self.run_git_cmd(["git", "add", fontfile], fontdir)

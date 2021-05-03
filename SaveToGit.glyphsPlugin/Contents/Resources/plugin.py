@@ -10,7 +10,7 @@ from os import remove
 from os.path import basename, dirname, join
 
 from AppKit import NSClassFromString, NSMenuItem
-from GlyphsApp import FILE_MENU, Glyphs
+from GlyphsApp import FILE_MENU, Glyphs, Message
 from GlyphsApp.plugins import GeneralPlugin
 
 
@@ -79,7 +79,17 @@ class SaveToGit(GeneralPlugin):
     @objc.python_method
     def saveAndCommit(self, sender):
         font = Glyphs.font
+        if font is None:
+            return
+
         font_path = font.filepath
+        if font_path is None:
+            Message(
+                message="Please save your Glyphs file once before using Save to Git.",
+                title="Save to Git"
+            )
+            return
+
         fontdir = dirname(font_path)
         fontfile = basename(font_path)
         font.save()
@@ -90,15 +100,18 @@ class SaveToGit(GeneralPlugin):
         old_data = self.run_git_cmd(
             ["git", "show", "HEAD:./%s" % fontfile], fontdir
         )
-
-        # Save to a temp file and open it for comparison
-        tmp_file_path = join(fontdir, ".de.kutilek.SaveToGit.%s" % fontfile)
-        with open(tmp_file_path, "wb") as old_file:
-            old_file.write(old_data)
-            old_font = Glyphs.open(old_file.name, showInterface=False)
-        msg = self.build_commit_msg(old_font, font)
-        old_font.close()
-        remove(tmp_file_path)
+        if old_data is None:
+            # Font probably is new in repository
+            msg = "Add %s" % (new_font.familyName)
+        else:
+            # Save to a temp file and open it for comparison
+            tmp_file_path = join(fontdir, ".de.kutilek.SaveToGit.%s" % fontfile)
+            with open(tmp_file_path, "wb") as old_file:
+                old_file.write(old_data)
+                old_font = Glyphs.open(old_file.name, showInterface=False)
+            msg = self.build_commit_msg(old_font, font)
+            old_font.close()
+            remove(tmp_file_path)
 
         # Add changed file to index
         self.run_git_cmd(["git", "add", fontfile], fontdir)

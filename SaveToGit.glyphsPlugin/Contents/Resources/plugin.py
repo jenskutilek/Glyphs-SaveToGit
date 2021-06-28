@@ -26,8 +26,12 @@ class SaveToGit(GeneralPlugin):
 
     @objc.python_method
     def start(self):
-        newMenuItem = NSMenuItem(self.name, self.saveAndCommit)
-        Glyphs.menu[FILE_MENU].append(newMenuItem)
+        # Set menu item so that it will call the validateMenuItem_ method
+        saveAndCommitMenuItem = NSMenuItem.new()
+        saveAndCommitMenuItem.setTitle_(self.name)
+        saveAndCommitMenuItem.setTarget_(self)
+        saveAndCommitMenuItem.setAction_(self.saveAndCommit_)
+        Glyphs.menu[FILE_MENU].append(saveAndCommitMenuItem)
 
     def validateMenuItem_(self, menuItem):
         return Glyphs.font is not None
@@ -79,8 +83,7 @@ class SaveToGit(GeneralPlugin):
             msg += ": " + ", ".join(sorted(set(glyphs)))
         return msg
 
-    @objc.python_method
-    def saveAndCommit(self, sender):
+    def saveAndCommit_(self, sender):
         font = Glyphs.font
         if font is None:
             return

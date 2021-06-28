@@ -8,6 +8,7 @@ import subprocess
 
 from os import remove
 from os.path import basename, dirname, join
+from re import compile, sub
 
 from AppKit import NSClassFromString, NSMenuItem
 from GlyphsApp import FILE_MENU, Glyphs, Message
@@ -15,6 +16,8 @@ from GlyphsApp.plugins import GeneralPlugin
 
 
 GSCompareFonts = NSClassFromString("GSCompareFonts")
+
+GLYPHNAME_REGEX = compile(r"(?<=[A-Z])(_)")
 
 
 class SaveToGit(GeneralPlugin):
@@ -105,23 +108,12 @@ class SaveToGit(GeneralPlugin):
 
         # Compare with last revision
 
-        # Get previous version of the file
-        old_data = self.run_git_cmd(
-            ["git", "show", "HEAD:./%s" % fontfile], fontdir
-        )
-        if old_data is None:
-            # Font probably is new in repository
-            # XXX: May also be glyphspackage format
-            msg = "Add %s" % (font.familyName)
+        if font_path.endswith(".glyphspackage"):
+            # print(font_path, "is package format")
+            msg = self._comparePackage(font, fontfile, fontdir)
         else:
-            # Save to a temp file and open it for comparison
-            tmp_file_path = join(fontdir, ".de.kutilek.SaveToGit.%s" % fontfile)
-            with open(tmp_file_path, "wb") as old_file:
-                old_file.write(old_data)
-                old_font = Glyphs.open(old_file.name, showInterface=False)
-            msg = self.build_commit_msg(old_font, font)
-            old_font.close()
-            remove(tmp_file_path)
+            # print(font_path, "is all in one format")
+            msg = self._compareAllInOne(font, fontfile, fontdir)
 
         # Add changed file to index
         self.run_git_cmd(["git", "add", fontfile], fontdir)
@@ -129,6 +121,75 @@ class SaveToGit(GeneralPlugin):
         # Commit changes
         self.run_git_cmd(["git", "commit", "-m", msg], fontdir)
         Glyphs.showNotification(self.name, msg)
+
+    @objc.python_method
+    def _compareAllInOne(self, font, fontfile, fontdir):
+        # Get previous version of the file
+        old_data = self.run_git_cmd(
+            ["git", "show", "HEAD:./%s" % fontfile], fontdir
+        )
+        if old_data is None:
+            # Font probably is new in repository
+            msg = "Add %s" % (font.familyName)
+        else:
+            # Save to a temp file and open it for comparison
+            tmp_file_path = join(
+                fontdir, ".de.kutilek.SaveToGit.%s" % fontfile
+            )
+            with open(tmp_file_path, "wb") as old_file:
+                old_file.write(old_data)
+                old_font = Glyphs.open(old_file.name, showInterface=False)
+            if old_font is None:
+                # glyphspackage format?
+                print("What happen?")
+            else:
+                msg = self.build_commit_msg(old_font, font)
+                old_font.close()
+            remove(tmp_file_path)
+        return msg
+
+    @objc.python_method
+    def _comparePackage(self, font, fontfile, fontdir):
+        # Show changes
+        changes = self.run_git_cmd(
+            ["git", "diff", "--name-status", fontfile], fontdir
+        )
+        if changes is None:
+            # Font probably is new in repository
+            msg = "Add %s" % (font.familyName)
+        else:
+            msg = "Update %s %s" % (font.familyName, font.masters[0].name)
+            changes = changes.decode("utf-8")
+
+            # Find git repo root
+            root = self.run_git_cmd(
+                ["git", "rev-parse", "--show-toplevel"], fontdir
+            )
+            root = root.decode("utf-8").strip()
+
+            # Find changed glyphs
+            # M       src/Font.glyphspackage/glyphs/A_.glyph
+            # etc.
+            glyph_paths = [
+                line.strip()
+                for line in changes.splitlines()
+                if "/glyphs/" in line
+            ]
+
+            glyphs = []
+            for glyph_path in glyph_paths:
+                parts = glyph_path.rsplit("/", 1)
+                if len(parts) != 2:
+                    print("Unhandled status:", parts)
+                    continue
+                _, filename = parts
+                glyphname_esc = filename.rsplit(".", 1)[0]
+                glyphname = sub(GLYPHNAME_REGEX, "", glyphname_esc)
+                if glyphname:
+                    glyphs.append(glyphname)
+            if glyphs:
+                msg += ": %s" % ", ".join(sorted(set(glyphs)))
+        return msg
 
     @objc.python_method
     def __file__(self):

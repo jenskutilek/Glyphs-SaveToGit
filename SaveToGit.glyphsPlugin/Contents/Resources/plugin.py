@@ -91,7 +91,10 @@ class SaveToGit(GeneralPlugin):
         font_path = font.filepath
         if font_path is None:
             Message(
-                message="Please save your Glyphs file once before using Save to Git.",
+                message=(
+                    "Please save your Glyphs file once before using "
+                    "Save to Git."
+                ),
                 title="Save to Git"
             )
             return
@@ -108,7 +111,8 @@ class SaveToGit(GeneralPlugin):
         )
         if old_data is None:
             # Font probably is new in repository
-            msg = "Add %s" % (new_font.familyName)
+            # XXX: May also be glyphspackage format
+            msg = "Add %s" % (font.familyName)
         else:
             # Save to a temp file and open it for comparison
             tmp_file_path = join(fontdir, ".de.kutilek.SaveToGit.%s" % fontfile)

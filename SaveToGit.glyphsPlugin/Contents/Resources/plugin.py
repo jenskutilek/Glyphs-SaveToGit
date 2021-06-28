@@ -48,7 +48,8 @@ class SaveToGit(GeneralPlugin):
                 args, stderr=subprocess.STDOUT, cwd=working_dir, shell=False
             )
         except subprocess.CalledProcessError as e:
-            Glyphs.showNotification(self.name, "Error: %s" % e.output)
+            # Glyphs.showNotification(self.name, "Error: %s" % e.output)
+            print("Git error: %s" % e.output)
         return result
 
     @objc.python_method

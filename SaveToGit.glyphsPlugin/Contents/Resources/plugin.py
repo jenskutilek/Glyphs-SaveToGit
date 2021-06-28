@@ -29,6 +29,9 @@ class SaveToGit(GeneralPlugin):
         newMenuItem = NSMenuItem(self.name, self.saveAndCommit)
         Glyphs.menu[FILE_MENU].append(newMenuItem)
 
+    def validateMenuItem_(self, menuItem):
+        return Glyphs.font is not None
+
     @objc.python_method
     def run_git_cmd(self, args, working_dir=None):
         result = None

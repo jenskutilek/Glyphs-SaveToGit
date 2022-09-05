@@ -95,7 +95,7 @@ class SaveToGit(GeneralPlugin):
                     "Please save your Glyphs file once before using "
                     "Save to Git."
                 ),
-                title="Save to Git",
+                title=self.name,
             )
             return
 
@@ -139,7 +139,7 @@ class SaveToGit(GeneralPlugin):
             old_font = Glyphs.open(tmp_file_path, showInterface=False)
             if old_font is None:
                 # glyphspackage format?
-                print("Something went wrong.")
+                print(f"{self.name}: Something went wrong.")
                 print(
                     f"Tried to save a temporary file to '{tmp_file_path}', "
                     "but opening the file again for comparison failed."

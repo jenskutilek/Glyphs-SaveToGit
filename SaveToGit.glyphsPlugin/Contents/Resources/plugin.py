@@ -112,6 +112,16 @@ class SaveToGit(GeneralPlugin):
             # print(font_path, "is all in one format")
             msg = self._compareAllInOne(font, fontfile, fontdir)
 
+        if msg is None:
+            Message(
+                message=(
+                    f"Could not determine changes for {font.familyName}. "
+                    "Committing to the git repository anyway."
+                ),
+                title=self.name,
+            )
+            msg = "Unspecified changes"
+
         # Add changed file to index
         self.run_git_cmd(["git", "add", fontfile], fontdir)
 

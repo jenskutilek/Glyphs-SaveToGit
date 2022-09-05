@@ -95,7 +95,7 @@ class SaveToGit(GeneralPlugin):
                     "Please save your Glyphs file once before using "
                     "Save to Git."
                 ),
-                title="Save to Git"
+                title="Save to Git",
             )
             return
 

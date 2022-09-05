@@ -1,7 +1,3 @@
-# encoding: utf-8
-
-from __future__ import division, print_function, unicode_literals
-
 import objc
 
 import subprocess
@@ -48,13 +44,13 @@ class SaveToGit(GeneralPlugin):
                 args, stderr=subprocess.STDOUT, cwd=working_dir, shell=False
             )
         except subprocess.CalledProcessError as e:
-            # Glyphs.showNotification(self.name, "Error: %s" % e.output)
-            print("Git error: %s" % e.output)
+            # Glyphs.showNotification(self.name, f"Error: {e.output}")
+            print(f"Git error: {e.output}")
         return result
 
     @objc.python_method
     def build_commit_msg(self, old_font, new_font):
-        msg = "Update %s %s" % (new_font.familyName, new_font.masters[0].name)
+        msg = f"Update {new_font.familyName} {new_font.masters[0].name}"
         glyphs = []
         for name in new_font.glyphs.keys():
             # Glyph has been added
@@ -126,23 +122,28 @@ class SaveToGit(GeneralPlugin):
     @objc.python_method
     def _compareAllInOne(self, font, fontfile, fontdir):
         # Get previous version of the file
+        msg = None
         old_data = self.run_git_cmd(
-            ["git", "show", "HEAD:./%s" % fontfile], fontdir
+            ["git", "show", f"HEAD:./{fontfile}"], fontdir
         )
         if old_data is None:
             # Font probably is new in repository
-            msg = "Add %s" % (font.familyName)
+            msg = f"Add {font.familyName} {font.masters[0].name}"
         else:
             # Save to a temp file and open it for comparison
             tmp_file_path = join(
-                fontdir, ".de.kutilek.SaveToGit.%s" % fontfile
+                fontdir, f".de.kutilek.SaveToGit.{fontfile}"
             )
             with open(tmp_file_path, "wb") as old_file:
                 old_file.write(old_data)
-                old_font = Glyphs.open(old_file.name, showInterface=False)
+            old_font = Glyphs.open(tmp_file_path, showInterface=False)
             if old_font is None:
                 # glyphspackage format?
-                print("What happen?")
+                print("Something went wrong.")
+                print(
+                    f"Tried to save a temporary file to '{tmp_file_path}', "
+                    "but opening the file again for comparison failed."
+                )
             else:
                 msg = self.build_commit_msg(old_font, font)
                 old_font.close()
@@ -157,9 +158,9 @@ class SaveToGit(GeneralPlugin):
         )
         if changes is None:
             # Font probably is new in repository
-            msg = "Add %s" % (font.familyName)
+            msg = f"Add {font.familyName} {font.masters[0].name}"
         else:
-            msg = "Update %s %s" % (font.familyName, font.masters[0].name)
+            msg = f"Update {font.familyName} {font.masters[0].name}"
             changes = changes.decode("utf-8")
 
             # Find git repo root
@@ -189,7 +190,8 @@ class SaveToGit(GeneralPlugin):
                 if glyphname:
                     glyphs.append(glyphname)
             if glyphs:
-                msg += ": %s" % ", ".join(sorted(set(glyphs)))
+                glyphnames = ", ".join(sorted(set(glyphs)))
+                msg += f": {glyphnames}"
         return msg
 
     @objc.python_method

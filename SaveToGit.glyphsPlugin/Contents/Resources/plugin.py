@@ -157,7 +157,10 @@ class SaveToGit(GeneralPlugin):
             else:
                 msg = self.build_commit_msg(old_font, font)
                 old_font.close()
-            remove(tmp_file_path)
+            try:
+                remove(tmp_file_path)
+            except FileNotFoundError:
+                pass
         return msg
 
     @objc.python_method

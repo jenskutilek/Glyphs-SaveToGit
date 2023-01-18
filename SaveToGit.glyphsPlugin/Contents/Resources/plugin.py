@@ -101,7 +101,7 @@ class SaveToGit(GeneralPlugin):
 
         fontdir = dirname(font_path)
         fontfile = basename(font_path)
-        font.save()
+        font.save(font_path)
 
         # Compare with last revision
 

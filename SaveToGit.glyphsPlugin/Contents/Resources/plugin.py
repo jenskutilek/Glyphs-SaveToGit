@@ -2,8 +2,7 @@ import objc
 
 import subprocess
 
-from os import remove
-from os.path import basename, dirname, join
+from pathlib import Path
 from re import compile, sub
 
 from AppKit import NSClassFromString, NSMenuItem
@@ -99,8 +98,8 @@ class SaveToGit(GeneralPlugin):
             )
             return
 
-        fontdir = dirname(font_path)
-        fontfile = basename(font_path)
+        fontdir = Path(font_path).parent
+        fontfile = Path(font_path).name
         font.save(font_path)
 
         # Compare with last revision
@@ -141,9 +140,7 @@ class SaveToGit(GeneralPlugin):
             msg = f"Add {font.familyName} {font.masters[0].name}"
         else:
             # Save to a temp file and open it for comparison
-            tmp_file_path = join(
-                fontdir, f".de.kutilek.SaveToGit.{fontfile}"
-            )
+            tmp_file_path = Path(fontdir) / f".de.kutilek.SaveToGit.{fontfile}"
             with open(tmp_file_path, "wb") as old_file:
                 old_file.write(old_data)
             old_font = Glyphs.open(tmp_file_path, showInterface=False)
@@ -157,10 +154,7 @@ class SaveToGit(GeneralPlugin):
             else:
                 msg = self.build_commit_msg(old_font, font)
                 old_font.close()
-            try:
-                remove(tmp_file_path)
-            except FileNotFoundError:
-                pass
+            Path.unlink(tmp_file_path, missing_ok=True)
         return msg
 
     @objc.python_method

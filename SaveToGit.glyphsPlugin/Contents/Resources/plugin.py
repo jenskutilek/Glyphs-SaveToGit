@@ -143,7 +143,7 @@ class SaveToGit(GeneralPlugin):
             tmp_file_path = Path(fontdir) / f".de.kutilek.SaveToGit.{fontfile}"
             with open(tmp_file_path, "wb") as old_file:
                 old_file.write(old_data)
-            old_font = Glyphs.open(tmp_file_path, showInterface=False)
+            old_font = Glyphs.open(str(tmp_file_path), showInterface=False)
             if old_font is None:
                 # glyphspackage format?
                 print(f"{self.name}: Something went wrong.")

@@ -25,7 +25,7 @@ class SaveToGit(GeneralPlugin):
     @objc.python_method
     def start(self):
         # Set menu item so that it will call the validateMenuItem_ method
-        saveAndCommitMenuItem = NSMenuItem.new()
+        saveAndCommitMenuItem = NSMenuItem.alloc().init()
         saveAndCommitMenuItem.setTitle_(self.name)
         saveAndCommitMenuItem.setTarget_(self)
         saveAndCommitMenuItem.setAction_(self.saveAndCommit_)
